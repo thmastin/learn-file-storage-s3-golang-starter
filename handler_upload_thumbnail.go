@@ -48,6 +48,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	mediaType, _, err := mime.ParseMediaType(header.Header.Get("Content-Type"))
 	if mediaType != "image/jpeg" && mediaType != "image/png" {
 		respondWithError(w, http.StatusExpectationFailed, "File is not of type jpeg or png", err)
+		return
 	}
 
 	videoMetadata, err := cfg.db.GetVideo(videoID)
@@ -82,8 +83,10 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Unable to copy data to file", err)
 		return
 	}
-	url := fmt.Sprintf("http://localhost:%d/assets/%s%s", cfg.port, videoIDString, fileExtension)
+	url := fmt.Sprintf("http://localhost:%s/assets/%s%s", cfg.port, videoIDString, fileExtension)
 	videoMetadata.ThumbnailURL = &url
+
+	fmt.Println(url)
 
 	err = cfg.db.UpdateVideo(videoMetadata)
 	if err != nil {
