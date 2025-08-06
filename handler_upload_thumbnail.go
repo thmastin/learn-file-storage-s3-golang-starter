@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime"
@@ -68,8 +70,11 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	}
 
 	fileExtension := extenstions[0]
+	randomBytes := make([]byte, 32)
+	rand.Read(randomBytes)
+	fileName := base64.RawURLEncoding.EncodeToString(randomBytes)
 
-	thumbnailPath := filepath.Join(cfg.assetsRoot, videoIDString+fileExtension)
+	thumbnailPath := filepath.Join(cfg.assetsRoot, fileName+fileExtension)
 
 	newFile, err := os.Create(thumbnailPath)
 	if err != nil {
@@ -83,7 +88,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Unable to copy data to file", err)
 		return
 	}
-	url := fmt.Sprintf("http://localhost:%s/assets/%s%s", cfg.port, videoIDString, fileExtension)
+	url := fmt.Sprintf("http://localhost:%s/assets/%s%s", cfg.port, fileName, fileExtension)
 	videoMetadata.ThumbnailURL = &url
 
 	fmt.Println(url)
