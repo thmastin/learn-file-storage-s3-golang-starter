@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -122,9 +123,11 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 func getVideoAspectRatio(filepath string) (string, error) {
 	cmd := exec.Command("ffprobe", "-v", "error", "-print_format", "json", "-show_streams", filepath)
 	var out bytes.Buffer
+	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
+	err = json.Unmarshal(out, &v)
 
 }
