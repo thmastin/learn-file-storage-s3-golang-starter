@@ -128,6 +128,6 @@ func getVideoAspectRatio(filepath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = json.Unmarshal(out, &v)
+	err = bytes.Buffer(json.Unmarshal())
 
 }
