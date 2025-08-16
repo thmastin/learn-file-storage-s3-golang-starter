@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -127,6 +128,7 @@ func getVideoAspectRatio(filepath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = out.AvailableBuffer()
+	var v json.
+		err = json.Unmarshal(out.Bytes(), v)
 
 }
