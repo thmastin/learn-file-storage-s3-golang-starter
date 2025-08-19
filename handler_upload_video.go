@@ -85,6 +85,22 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	aspectRatio, err := getVideoAspectRatio(tempFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to get aspect ratio of video", err)
+		return
+	}
+
+	var prefix string
+	switch aspectRatio {
+	case "16:9":
+		prefix = "landscape/"
+	case "9:16":
+		prefix = "portrait/"
+	case "other":
+		prefix = "other/"
+	}
+
 	randomBytes := make([]byte, 32)
 	_, err = rand.Read(randomBytes)
 	if err != nil {
@@ -93,7 +109,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	}
 
 	fileName := hex.EncodeToString(randomBytes)
-	key := fileName + ".mp4"
+	key := prefix + fileName + ".mp4"
 
 	putObject := &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
@@ -128,7 +144,28 @@ func getVideoAspectRatio(filepath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var v json.
-		err = json.Unmarshal(out.Bytes(), v)
+	var output struct {
+		Streams []struct {
+			Width  int `json:"width"`
+			Height int `json:"height"`
+		} `json:"streams"`
+	}
+	err = json.Unmarshal(out.Bytes(), &output)
+	if err != nil {
+		return "", err
+	}
+	if len(output.Streams) < 1 {
+		return "", fmt.Errorf("no stream data")
+	}
+	height := output.Streams[0].Height
+	width := output.Streams[0].Width
 
+	ratio := float64(width) / float64(height)
+
+	if ratio >= 1.7 && ratio <= 1.8 { // roughly 16:9 (1.777...)
+		return "16:9", nil
+	} else if ratio >= 0.5 && ratio <= 0.6 { // roughly 9:16 (0.5625)
+		return "9:16", nil
+	}
+	return "other", nil
 }
