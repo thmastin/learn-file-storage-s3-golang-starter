@@ -79,13 +79,27 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	_, err = tempFile.Seek(0, io.SeekStart)
+	newPath, err := processVideoForFastStart(tempFile.Name())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Unable to set to start of tempFile", err)
+		respondWithError(w, http.StatusInternalServerError, "Unable to process video for faststart", err)
 		return
 	}
 
-	aspectRatio, err := getVideoAspectRatio(tempFile.Name())
+	processedFile, err := os.Open(newPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to open processedFile", err)
+		return
+	}
+	defer os.Remove(processedFile.Name())
+	defer processedFile.Close()
+
+	_, err = processedFile.Seek(0, io.SeekStart)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to set to start of processedFile", err)
+		return
+	}
+
+	aspectRatio, err := getVideoAspectRatio(processedFile.Name())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to get aspect ratio of video", err)
 		return
@@ -114,7 +128,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	putObject := &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
 		Key:         &key,
-		Body:        tempFile,
+		Body:        processedFile,
 		ContentType: &mediaType,
 	}
 	_, err = cfg.s3Client.PutObject(context.Background(), putObject)
@@ -172,7 +186,7 @@ func getVideoAspectRatio(filepath string) (string, error) {
 
 func processVideoForFastStart(filepath string) (string, error) {
 	output := filepath + ".processing"
-	cmd := exec.Command("ffmpeg", "-i", filepath, "-c", "coppy", "-movflags", "faststart", "-f", "mp4", output)
+	cmd := exec.Command("ffmpeg", "-i", filepath, "-c", "copy", "-movflags", "faststart", "-f", "mp4", output)
 	err := cmd.Run()
 	if err != nil {
 		return "", err
