@@ -52,8 +52,6 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	processedVideo, err := processVideoForFastStart(*video.VideoURL)
-
 	file, header, err := r.FormFile("video")
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to parse from file", err)
