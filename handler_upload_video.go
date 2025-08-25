@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
@@ -137,14 +138,17 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
-
-	video.VideoURL = &url
+	new_url := cfg.s3Bucket + "," + key
+	video.VideoURL = &new_url
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to update video in database", err)
 		return
 	}
+
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
+
+	video.VideoURL = &url
 	log.Printf("Successfully uploaded video %s to S3 with URL: %s", videoID, url)
 	respondWithJSON(w, http.StatusOK, video)
 
@@ -192,4 +196,8 @@ func processVideoForFastStart(filepath string) (string, error) {
 		return "", err
 	}
 	return output, nil
+}
+
+func generatePresignedURL(s3Client *s3.Client, bucket, key string, expireTime time.Duration) (string, error) {
+
 }
