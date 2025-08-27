@@ -151,7 +151,6 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	video.VideoURL = &url
 	log.Printf("Successfully uploaded video %s to S3 with URL: %s", videoID, url)
 	respondWithJSON(w, http.StatusOK, video)
-
 }
 
 func getVideoAspectRatio(filepath string) (string, error) {
@@ -199,6 +198,5 @@ func processVideoForFastStart(filepath string) (string, error) {
 }
 
 func generatePresignedURL(s3Client *s3.Client, bucket, key string, expireTime time.Duration) (string, error) {
-	presigner := s3.NewPresignClient(s3Client)
-
+	return "", nil
 }
