@@ -13,10 +13,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
+	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -146,11 +148,15 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
+	video, err = cfg.dbVideoToSignedVideo(video)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to generate presigned url", err)
+		return
+	}
 
-	video.VideoURL = &url
-	log.Printf("Successfully uploaded video %s to S3 with URL: %s", videoID, url)
+	log.Printf("Successfully uploaded video %s to S3 with URL: %s", videoID, *video.VideoURL)
 	respondWithJSON(w, http.StatusOK, video)
+	return
 }
 
 func getVideoAspectRatio(filepath string) (string, error) {
@@ -210,4 +216,23 @@ func generatePresignedURL(s3Client *s3.Client, bucket, key string, expireTime ti
 		return "", err
 	}
 	return presignedKey.URL, nil
+}
+
+func (cfg *apiConfig) dbVideoToSignedVideo(video database.Video) (database.Video, error) {
+	splitURL := strings.Split(*video.VideoURL, ",")
+	if len(splitURL) < 2 {
+		return database.Video{}, fmt.Errorf("invalid video URL format")
+	}
+
+	bucket := splitURL[0]
+	key := splitURL[1]
+
+	presignedURL, err := generatePresignedURL(cfg.s3Client, bucket, key, 15*time.Minute)
+	if err != nil {
+		return database.Video{}, err
+	}
+
+	video.VideoURL = &presignedURL
+
+	return video, nil
 }
