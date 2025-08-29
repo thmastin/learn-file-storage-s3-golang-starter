@@ -122,8 +122,8 @@ func (cfg *apiConfig) handlerVideosRetrieve(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	for _, video := range videos {
-		video, err = cfg.dbVideoToSignedVideo(video)
+	for index, video := range videos {
+		videos[index], err = cfg.dbVideoToSignedVideo(video)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Unable to generate presigned url", err)
 			return

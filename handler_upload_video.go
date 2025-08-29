@@ -219,6 +219,10 @@ func generatePresignedURL(s3Client *s3.Client, bucket, key string, expireTime ti
 }
 
 func (cfg *apiConfig) dbVideoToSignedVideo(video database.Video) (database.Video, error) {
+	if video.VideoURL == nil {
+		return video, nil
+	}
+
 	splitURL := strings.Split(*video.VideoURL, ",")
 	if len(splitURL) < 2 {
 		return database.Video{}, fmt.Errorf("invalid video URL format")
