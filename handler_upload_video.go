@@ -137,7 +137,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	new_url := cfg.s3CfDistribution + "/" + key
+	new_url := "https://" + cfg.s3CfDistribution + "/" + key
 	video.VideoURL = &new_url
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
